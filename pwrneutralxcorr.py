@@ -24,6 +24,8 @@ x += numpy.random.randn(x.size) * 0.05 #noise on x
 
 import matplotlib.pyplot as plt
 
+plt.figure(1)
+plt.clf()
 plt.plot(x, c='b')
 plt.gca().set_ylabel("signal", color="blue",fontsize=14)
 
@@ -33,9 +35,34 @@ mxc = numpy.correlate(numpy.abs(x), numpy.abs(seq))
 
 pwrneutralxc = xc / mxc # better to check for 0/0 here!
 
+def partial_pwr_neutral_xcorr(sig, seq, nparts = 2):
+    seq = numpy.asarray(seq)
+    beg, n = 0, seq.size // nparts
+    parts = []
+    
+    for i in range(nparts):
+        part = seq.copy()
+        part[:beg] = 0
+        if i + 1 < nparts:
+            part[beg+n:] = 0
+        
+        xc = numpy.correlate(x, part)
+        mxc = numpy.correlate(numpy.abs(x), numpy.abs(part))
+        
+        parts.append(xc / mxc)
+    
+    return numpy.array(parts)
+
+part_xcs = partial_pwr_neutral_xcorr(x, seq)
+
 ax2 = plt.gca().twinx()
 ax2.plot(pwrneutralxc, c='r')
+ax2.plot(numpy.mean(part_xcs, axis=0), c='g', label='mean')
+ax2.plot(numpy.min(part_xcs, axis=0), c='c', label='min')
+ax2.plot(numpy.prod(part_xcs, axis=0), c='y', label='prod')
 ax2.set_ylabel("Xcorr / Xcorr(abs)",color="red",fontsize=14)
+
+plt.legend()
 
 
 plt.show()
